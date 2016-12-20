@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/lucianojardim/node-todo-api#readme",
   "dependencies": {
-    "mongodb": "^2.2.16"
+    "mongodb": "^2.2.16",
+    "mongoose": "^4.7.4"
   }
 }
