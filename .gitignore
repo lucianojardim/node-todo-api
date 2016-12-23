@@ -35,3 +35,6 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+# 20161223 LucianoJ Added config to list of ignored files
+server/config/config.json
