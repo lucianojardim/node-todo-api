@@ -1,4 +1,4 @@
-require('./config/config.js');
+require('./config/config');
 
 const _ = require('lodash');
 const express = require('express');
@@ -8,8 +8,8 @@ const {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
-
-var port = process.env.PORT || 3000;
+var {authenticate} = require('./middleware/authenticate');
+const port = process.env.PORT || 3000;
 
 var app = express();
 
@@ -29,25 +29,28 @@ app.post('/todos', (req, res) => {
 
 // GET /todos
 app.get('/todos', (req, res) => {
-    Todo.find().then((todos) => {
-      res.send({todos});
-    }, (e) =>{
-      res.status(400).send(e);
-    });
+  Todo.find().then((todos) => {
+    res.send({todos});
+  }, (e) => {
+    res.status(400).send(e);
   });
+});
 
 // GET /todos/1234112341234
 app.get('/todos/:id', (req,res) => {
   var id = req.params.id;
-  if(!ObjectID.isValid(id)){
+
+  if (!ObjectID.isValid(id)) {
     return res.status(404).send();
-  };
-  Todo.findById(id).then((todoById) => {
-    if(!todoById){
+  }
+
+  Todo.findById(id).then((todo) => {
+    if (!todo) {
       return res.status(404).send();
     }
-    res.send({todoById});
-  }).catch((e) =>{
+
+    res.send({todo});
+  }).catch((e) => {
     res.status(400).send();
   });
 });
@@ -57,13 +60,15 @@ app.delete('/todos/:id', (req,res) => {
   var id = req.params.id;
   if(!ObjectID.isValid(id)){
     return res.status(404).send();
-  };
-  Todo.findByIdAndRemove(id).then((todoById) => {
-    if(!todoById){
+  }
+
+  Todo.findByIdAndRemove(id).then((todo) => {
+    if (!todo) {
       return res.status(404).send();
     }
-    res.send({todoById});
-  }).catch((e) =>{
+
+    res.send({todo});
+  }).catch((e) => {
     res.status(400).send();
   });
 });
@@ -73,36 +78,73 @@ app.patch('/todos/:id', (req,res) => {
   var id = req.params.id;
   var body = _.pick(req.body, ['text','completed']); //accepts only some properties
 
-  if(!ObjectID.isValid(id)){
+  if (!ObjectID.isValid(id)) {
     return res.status(404).send();
-  };
-  if(_.isBoolean(body.completed) && (body.completed)){
-    body.completedAt = new Date().getTime(); //Unix date: number of milisenconds since 01/01/1970
-  }else{
+  }
+
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
     body.completed = false;
     body.completedAt = null;
   }
-  Todo.findByIdAndUpdate(id, {$set:body}, {new:true}).then((todo) => {
-    if(!todo){
+
+  Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    if (!todo) {
       return res.status(404).send();
     }
+
     res.send({todo});
-  }).catch((e) =>{
+  }).catch((e) => {
     res.status(400).send();
-  });
+  })
 });
 
-//POST /users
+// POST /users
 app.post('/users', (req, res) => {
-  var body = _.pick(req.body, ['email','password']);
+  var body = _.pick(req.body, ['email', 'password']);
   var user = new User(body);
+<<<<<<< HEAD
   user.save().then(() => {
     //res.send(user);
     return user.generateAuthToken();
   }).then((token) => {
     res.header('x-auth', token).send(user); // x-auth is a custom header
   }, (e) => {
+=======
+
+  user.save().then(() => {
+    return user.generateAuthToken();
+  }).then((token) => {
+    res.header('x-auth', token).send(user);
+  }).catch((e) => {
+>>>>>>> e539361b6323a02e05d2223fedcd417067535105
     res.status(400).send(e);
+  })
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+// POST /users/login {email, password}
+app.post('/users/login', (req, res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+
+  User.findByCredentials(body.email, body.password).then((user) => {
+    return user.generateAuthToken().then((token) => {
+      res.header('x-auth', token).send(user);
+    });
+  }).catch((e) => {
+    res.status(400).send();
+  });
+});
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+  req.user.removeToken(req.token).then(() => {
+    res.status(200).send();
+  }, () => {
+    res.status(400).send();
   });
 });
 
@@ -119,7 +161,7 @@ app.get('/users/me', (req,res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Started on port ${port}`);
+  console.log(`Started up at port ${port}`);
 });
 
 module.exports = {app};
