@@ -44,12 +44,13 @@ app.get('/todos/:id', (req,res) => {
     return res.status(404).send();
   }
 
-  Todo.findById(id).then((todoById) => {
-    if (!todoById) {
+  Todo.findById(id).then((todo) => {
+    if (!todo) {
       return res.status(404).send();
     }
-    res.send({todoById});
-  }).catch((e) =>{
+
+    res.send({todo});
+  }).catch((e) => {
     res.status(400).send();
   });
 });
@@ -60,12 +61,14 @@ app.delete('/todos/:id', (req,res) => {
   if(!ObjectID.isValid(id)){
     return res.status(404).send();
   }
-  Todo.findByIdAndRemove(id).then((todoById) => {
-    if(!todoById){
+
+  Todo.findByIdAndRemove(id).then((todo) => {
+    if (!todo) {
       return res.status(404).send();
     }
-    res.send({todoById});
-  }).catch((e) =>{
+
+    res.send({todo});
+  }).catch((e) => {
     res.status(400).send();
   });
 });
@@ -75,7 +78,7 @@ app.patch('/todos/:id', (req,res) => {
   var id = req.params.id;
   var body = _.pick(req.body, ['text','completed']); //accepts only some properties
 
-  if(!ObjectID.isValid(id)){
+  if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
 
@@ -124,6 +127,14 @@ app.post('/users/login', (req, res) => {
       res.header('x-auth', token).send(user);
     });
   }).catch((e) => {
+    res.status(400).send();
+  });
+});
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+  req.user.removeToken(req.token).then(() => {
+    res.status(200).send();
+  }, () => {
     res.status(400).send();
   });
 });
